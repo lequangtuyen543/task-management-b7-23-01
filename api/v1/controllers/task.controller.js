@@ -60,3 +60,29 @@ module.exports.detail = async (req, res) => {
     res.json("không tìm thấy!");
   }
 };
+
+// [PATCH] /api/v1/tasks/change-status/:id
+module.exports.changeStatus = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const status = req.body.status;
+
+    console.log(id, status)
+
+    await Task.updateOne({
+      _id: id
+    }, {
+      status: status
+    });
+
+    res.json({
+      code: 200,
+      message: "Cập nhật thành công!"
+    });
+  } catch (error) {
+    res.json({
+      code: 400,
+      message: "Cập nhật thất bại!"
+    });
+  }
+};
