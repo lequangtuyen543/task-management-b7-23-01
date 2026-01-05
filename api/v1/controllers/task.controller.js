@@ -92,8 +92,6 @@ module.exports.changeMulti = async (req, res) => {
   try {
     const { ids, key, value } = req.body;
 
-    console.log(ids, key, value)
-
     switch (key) {
       case "status":
         await Task.updateMany(
@@ -121,6 +119,25 @@ module.exports.changeMulti = async (req, res) => {
     res.json({
       code: 400,
       message: "Không tồn tại!",
+    });
+  }
+};
+
+// [POST] /api/v1/tasks/create
+module.exports.create = async (req, res) => {
+  try {
+    const task = new Task(req.body);
+    const data = await task.save();
+
+    res.json({
+      code: 200,
+      message: "Tạo thành công !",
+      data
+    });
+  } catch (error) {
+    res.json({
+      code: 400,
+      message: "Lỗi !",
     });
   }
 };
