@@ -1,5 +1,9 @@
 const md5 = require('md5')
 const User = require("../models/user.model");
+const ForgotPassword = require("../models/forgot-password.model");
+
+const generateHelper = require('../../../helpers/generate');
+const sendMailHelper = require('../../../helpers/sendMail');
 
 // [POST] /api/v1/users/register
 module.exports.register = async (req, res) => {
@@ -64,6 +68,78 @@ module.exports.login = async (req, res) => {
   res.json({
     code: 200,
     message: "Đăng nhập thành công!",
+    token: token
+  });
+};
+
+// [POST] /api/v1/users/password/forgot
+module.exports.forgotPassword = async (req, res) => {
+  const email = req.body.email;
+
+  const user = await User.findOne({
+    email: email,
+    deleted: false
+  })
+
+  if (!user) {
+    res.json({
+      code: 400,
+      message: "Email không tồn tại!"
+    });
+    return;
+  }
+
+  const otp = generateHelper.generateRandomNumber(8);
+
+  // Lưu data vào database
+  const objectForgotPassword = {
+    email: email,
+    otp: otp,
+    expireAt: Date.now()
+  }
+
+  const forgotPassword = new ForgotPassword(objectForgotPassword)
+  await forgotPassword.save()
+
+  // Gửi OTP qua email user 
+  const subject = "Mã OTP xác minh lấy mật khẩu";
+  const html = `Mã OTP xác minh lấy lại mật khẩu là <b>${otp}</b>. Thời hạn sử dụng là 3 phút. Vui lòng không chia sẻ mã OTP với bất kỳ ai.`;
+  sendMailHelper.sendEmail(email, subject, html);
+
+  res.json({
+    code: 200,
+    message: "Đã gửi mã OTP qua email"
+  });
+};
+
+// [POST] /api/v1/users/password/otp
+module.exports.otpPassword = async (req, res) => {
+  const email = req.body.email;
+  const otp = req.body.otp;
+
+  const result = await ForgotPassword.findOne({
+    email: email,
+    otp: otp
+  })
+
+  if (!result) {
+    res.json({
+      code: 400,
+      message: "Mã OTP không hợp lệ"
+    });
+    return;
+  }
+
+  const user = await User.findOne({
+    email: email
+  })
+
+  const token = user.token
+  res.cookie('token', token)
+
+  res.json({
+    code: 200,
+    message: "Xác thực thành công",
     token: token
   });
 };
